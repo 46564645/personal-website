@@ -1,54 +1,56 @@
 # Personal Website Page 1 Animation Plan
 
-This repository currently contains the first-page visual prototype for the personal website. The page is intended to become one section/page of the final site, not the full site by itself.
+This repository contains the first-page visual prototype for the personal website. The page is intended to become one section/page of the final site, not the full site by itself.
 
 ## Current State
 
-The current homepage is a full-screen `LetterGlitch` background:
+The current homepage is a Vite + React implementation with a full-screen `LetterGlitch` character background:
 
 - black background
 - purple monospace random characters
-- canvas-based responsive rendering
-- character size and density should remain close to the current version
+- DOM-based responsive character rendering, so the glitch field can be measured and focused
+- alternating embedded Python-style greetings
+- white corner focus frame with light outside blur
+- character size and density remain close to the original visual prototype
 
-The project also stores three React Bits animation source components in `react-bits-animations/`:
+The project also stores three React Bits animation source components in `react-bits-animations/` as references:
 
 - `DecryptedText.jsx`
 - `FuzzyText.jsx`
 - `TrueFocus.jsx`
 
-These are source references for the later React implementation.
-
 ## Target Animation
 
 The page should keep the current full-screen random-code / glitch background as its base layer.
 
-On top of that background, a short Python-style greeting should repeatedly appear from the noise:
+On top of that background, two short Python-style greetings should repeatedly appear from the noise:
 
 ```python
 print("Hi, I'm ma zhichao")
+print("Welcome to my website")
 ```
 
 The animation loop should work like this:
 
 1. The full-screen `LetterGlitch` background keeps running.
-2. Near the left edge of the screen, vertically centered, a small text area activates.
-3. That area uses the `DecryptedText` animation to transform random-looking characters into `print("Hi, I'm ma zhichao")`.
-4. During this reveal, the same text should continuously carry the `FuzzyText` blinking / fuzzy / glitch effect.
-5. After the text is fully readable, a focus effect appears around it:
-   - the greeting becomes the visual focus
-   - the surrounding area becomes visually softer / less prominent
-   - the greeting scales up to roughly 3x its original size
-6. The focused, enlarged greeting holds for about 3 seconds.
-7. The greeting scales back down to its original size.
-8. The focus effect disappears.
-9. The text dissolves back into the live `LetterGlitch` background.
-10. The same sequence repeats near the right edge of the screen, vertically centered.
+2. The white corner focus frame first scans a short random run of existing乱码.
+3. The focus frame then scans a longer random run of existing乱码.
+4. A third focus target moves closer to the greeting location.
+5. Near the left edge of the screen, vertically centered, the matching row of real DOM characters activates.
+6. Those existing character slots are taken over inside `LetterGlitch` and decrypt from random characters into `print("Hi, I'm ma zhichao")`.
+7. During reveal, the focus frame moves into place so the decrypt finish and focus arrival line up visually.
+8. After the text is fully readable, the focus frame locks onto it:
+   - the greeting remains inside the same character field
+   - the focused text enlarges into a three-row cleared window
+   - the enlarged text is centered inside that cleared window
+   - characters outside the focus window are lightly blurred using `backdrop-filter`
+9. The greeting exits back into the live `LetterGlitch` background.
+10. The same sequence repeats near the right edge of the screen, vertically centered, using `print("Welcome to my website")`.
 11. The page loops forever: left side, right side, left side, right side.
 
 Important visual constraint:
 
-- The greeting should initially appear at the same approximate font size as the existing background characters.
+- The greeting initially appears at the same approximate font size as the existing background characters.
 - It should feel like the text is emerging from the existing glitch field, not like a separate large title dropped on top.
 
 ## Animation Responsibilities
@@ -58,30 +60,29 @@ Use the existing React Bits sources as directly as practical:
 - `LetterGlitch`
   - Base full-screen animated background.
   - Continues running throughout the whole page.
+  - Owns the embedded greeting slots so the text appears inside the乱码 grid.
 
 - `DecryptedText`
-  - Handles the reveal from scrambled characters into the final Python greeting.
-  - This is responsible for steps 2 and 3 of the reveal sequence.
+  - Kept as a source reference for the reveal style.
+  - The current page mirrors the decrypt behavior directly inside `LetterGlitch` so the text is not an overlay.
 
 - `FuzzyText`
-  - Adds the persistent blinking / fuzzy / glitch texture to the greeting while it appears.
-  - It should run at the same time as the `DecryptedText` reveal, not as a separate later phase.
+  - Kept as a source reference for glitch texture.
+  - The current page uses DOM character scrambling/flicker in `LetterGlitch` to avoid a separate overlay.
 
 - `TrueFocus`
-  - Provides the focus-frame / blur idea for the enlarged greeting phase.
-  - The original component may need adaptation because the desired effect focuses the whole greeting, not individual words.
+  - Provides the white corner focus frame and outside-blur idea.
+  - The current page applies that idea to measured character positions rather than duplicating a separate focus-text overlay.
 
-## Recommended Technical Path
+## Technical Path
 
-The current repository is not yet a full React app. It has `index.html`, `App.jsx`, and the component source, but no package manifest or build setup.
-
-Because the React Bits animation sources are React components, the recommended implementation path is:
+The project uses:
 
 ```txt
 Vite + React + JavaScript + CSS
 ```
 
-Recommended future structure:
+Current structure:
 
 ```txt
 package.json
@@ -102,26 +103,27 @@ Reasons:
 - The existing animation sources are JSX components.
 - Vite gives a small, fast React setup without unnecessary framework complexity.
 - JavaScript is enough for this prototype and matches the provided source files.
-- Plain CSS is better suited than Tailwind for this page because the work is mostly canvas, blur, transform, glow, and timing choreography.
+- Plain CSS is better suited than Tailwind for this page because the work is mostly character layout, blur, transform, glow, and timing choreography.
 
 ## Layering Model
 
 The page should be built as layered visuals:
 
 ```txt
-Layer 1: LetterGlitch full-screen canvas background
-Layer 2: optional focus / blur overlay
-Layer 3: positioned greeting animation
+Layer 1: LetterGlitch full-screen DOM character background
+Layer 2: embedded greeting characters / enlarged focused text
+Layer 3: focus outside-blur panels
+Layer 4: white corner focus frame
 ```
 
-The greeting layer should be absolutely positioned at either the left or right side of the viewport. It should be vertically centered and aligned to the existing character-grid feeling.
+The greeting is positioned on the left or right side of the viewport and aligned to the same character grid as the background.
 
 ## Sequence Controller
 
 The page needs a small animation controller in `App.jsx` or a dedicated hook/component. It should track:
 
 - active side: `left` or `right`
-- phase: `idle`, `reveal`, `focus`, `hold`, `exit`
+- phase: `scan-short`, `scan-long`, `scan-near`, `reveal`, `focus`, `hold`, `exit`
 - timing for each phase
 - whether the greeting component should be mounted
 - whether the focus overlay should be visible
@@ -129,14 +131,16 @@ The page needs a small animation controller in `App.jsx` or a dedicated hook/com
 Suggested timing:
 
 ```txt
-reveal: 800ms - 1400ms
-focus scale in: 300ms - 500ms
+scan-short: 1050ms
+scan-long: 1050ms
+scan-near: 750ms
+reveal: 1400ms
+focus scale in: 420ms
 hold: 3000ms
-scale out: 300ms - 500ms
-return to background: 400ms - 800ms
+exit: 650ms
 ```
 
-These values are starting points and should be tuned visually.
+These values are tuned visually for the current prototype.
 
 ## Dependency Notes
 
@@ -151,11 +155,24 @@ motion
 
 `DecryptedText.jsx` and `TrueFocus.jsx` import `motion/react`, so `motion` is required.
 
-`TrueFocus.jsx` imports `./TrueFocus.css`, but the provided source folder did not include that CSS file. Before using `TrueFocus`, either:
+`motion` is required for the moving focus frame and blur panels.
 
-- add the missing CSS from the original source, or
-- rewrite the required focus-frame styles in the page stylesheet.
+## Development
 
-## Current Limitation
+Install dependencies:
 
-No implementation has been changed yet. This README documents the intended behavior and technical path for the first-page animation.
+```sh
+pnpm install
+```
+
+Run locally:
+
+```sh
+pnpm dev
+```
+
+Build:
+
+```sh
+pnpm build
+```
