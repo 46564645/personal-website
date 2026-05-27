@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LetterGlitch Responsive Background</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+        background: #000;
+      }
+
+      .letter-glitch-page {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .letter-glitch {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        overflow: hidden;
+      }
+
+      .letter-glitch canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="letter-glitch-page">
+      <div
+        class="letter-glitch"
+        data-glitch-colors="#5227FF"
+        data-glitch-speed="40"
+        data-center-vignette="false"
+        data-outer-vignette="false"
+        data-smooth="true"
+      >
+        <canvas></canvas>
+      </div>
+    </div>
+
+    <script>
+      function createLetterGlitch(root) {
+        const canvas = root.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+        const glitchColors = root.dataset.glitchColors.split(",");
+        const glitchSpeed = Number(root.dataset.glitchSpeed || 50);
+        const centerVignette = root.dataset.centerVignette === "true";
+        const outerVignette = root.dataset.outerVignette === "true";
+        const smooth = root.dataset.smooth !== "false";
+        const characters =
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789";
+        const lettersAndSymbols = Array.from(characters);
+
+        const fontSize = 16;
+        const charWidth = 10;
+        const charHeight = 20;
+        const letters = [];
+        const grid = { columns: 0, rows: 0 };
+        let lastGlitchTime = Date.now();
+        let animationFrame = 0;
+        let resizeTimeout = 0;
+
+        function getRandomChar() {
+          return lettersAndSymbols[
+            Math.floor(Math.random() * lettersAndSymbols.length)
+          ];
+        }
+
+        function getRandomColor() {
+          return glitchColors[Math.floor(Math.random() * glitchColors.length)];
+        }
+
+        function hexToRgb(hex) {
+          const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+          hex = hex.replace(shorthandRegex, function (_m, r, g, b) {
+            return r + r + g + g + b + b;
+          });
+
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return result
+            ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16),
+              }
+            : null;
+        }
+
+        function interpolateColor(start, end, factor) {
+          const result = {
+            r: Math.round(start.r + (end.r - start.r) * factor),
+            g: Math.round(start.g + (end.g - start.g) * factor),
+            b: Math.round(start.b + (end.b - start.b) * factor),
+          };
+          return "rgb(" + result.r + ", " + result.g + ", " + result.b + ")";
+        }
+
+        function calculateGrid(width, height) {
+          return {
+            columns: Math.ceil(width / charWidth),
+            rows: Math.ceil(height / charHeight),
+          };
+        }
+
+        function initializeLetters(columns, rows) {
+          grid.columns = columns;
+          grid.rows = rows;
+          letters.length = 0;
+          const totalLetters = columns * rows;
+
+          for (let i = 0; i < totalLetters; i += 1) {
+            letters.push({
+              char: getRandomChar(),
+              color: getRandomColor(),
+              targetColor: getRandomColor(),
+              colorProgress: 1,
+            });
+          }
+        }
+
+        function drawLetters() {
+          if (letters.length === 0) return;
+          const rect = canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          ctx.font = fontSize + "px monospace";
+          ctx.textBaseline = "top";
+
+          letters.forEach(function (letter, index) {
+            const x = (index % grid.columns) * charWidth;
+            const y = Math.floor(index / grid.columns) * charHeight;
+            ctx.fillStyle = letter.color;
+            ctx.fillText(letter.char, x, y);
+          });
+        }
+
+        function resizeCanvas() {
+          const dpr = window.devicePixelRatio || 1;
+          const rect = root.getBoundingClientRect();
+
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          const size = calculateGrid(rect.width, rect.height);
+          initializeLetters(size.columns, size.rows);
+          drawLetters();
+        }
+
+        function updateLetters() {
+          if (letters.length === 0) return;
+          const updateCount = Math.max(1, Math.floor(letters.length * 0.05));
+
+          for (let i = 0; i < updateCount; i += 1) {
+            const index = Math.floor(Math.random() * letters.length);
+            const letter = letters[index];
+            if (!letter) continue;
+
+            letter.char = getRandomChar();
+            letter.targetColor = getRandomColor();
+
+            if (!smooth) {
+              letter.color = letter.targetColor;
+              letter.colorProgress = 1;
+            } else {
+              letter.colorProgress = 0;
+            }
+          }
+        }
+
+        function handleSmoothTransitions() {
+          let needsRedraw = false;
+
+          letters.forEach(function (letter) {
+            if (letter.colorProgress < 1) {
+              letter.colorProgress += 0.05;
+              if (letter.colorProgress > 1) letter.colorProgress = 1;
+
+              const startRgb = hexToRgb(letter.color);
+              const endRgb = hexToRgb(letter.targetColor);
+
+              if (startRgb && endRgb) {
+                letter.color = interpolateColor(
+                  startRgb,
+                  endRgb,
+                  letter.colorProgress,
+                );
+                needsRedraw = true;
+              }
+            }
+          });
+
+          if (needsRedraw) drawLetters();
+        }
+
+        function animate() {
+          const now = Date.now();
+
+          if (now - lastGlitchTime >= glitchSpeed) {
+            updateLetters();
+            drawLetters();
+            lastGlitchTime = now;
+          }
+
+          if (smooth) handleSmoothTransitions();
+          animationFrame = requestAnimationFrame(animate);
+        }
+
+        if (outerVignette) {
+          const vignette = document.createElement("div");
+          vignette.style.cssText =
+            "position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%)";
+          root.appendChild(vignette);
+        }
+
+        if (centerVignette) {
+          const vignette = document.createElement("div");
+          vignette.style.cssText =
+            "position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%)";
+          root.appendChild(vignette);
+        }
+
+        window.addEventListener("resize", function () {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(function () {
+            cancelAnimationFrame(animationFrame);
+            resizeCanvas();
+            animate();
+          }, 100);
+        });
+
+        resizeCanvas();
+        animate();
+      }
+
+      createLetterGlitch(document.querySelector(".letter-glitch"));
+    </script>
+  </body>
+</html>
