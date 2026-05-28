@@ -73,18 +73,24 @@ body {
   line-height: 40px;
   white-space: pre;
   letter-spacing: 0;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .letter-focused-text__inner {
-  display: block;
-  width: max-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-shadow:
     0 0 1px rgba(255, 255, 255, 0.95),
     0 0 9px rgba(255, 255, 255, 0.72),
     0 0 18px rgba(82, 39, 255, 0.45);
   transform-origin: center center;
   animation: focusedTextSettle 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.letter-fuzzy-canvas {
+  display: block;
+  max-width: 100%;
 }
 
 @keyframes focusedTextSettle {
@@ -145,15 +151,16 @@ body {
 .greeting-focus .corner {
   --border-color: #ffffff;
   --glow-color: rgba(255, 255, 255, 0.72);
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
   border-color: #ffffff;
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.92));
 }
 
 .greeting-focus .top-left {
-  left: -6px;
-  top: -6px;
+  left: 0;
+  top: 0;
   border-left-color: #ffffff;
   border-top-color: #ffffff;
   border-left-width: 2px;
@@ -161,8 +168,8 @@ body {
 }
 
 .greeting-focus .top-right {
-  right: -6px;
-  top: -6px;
+  right: 0;
+  top: 0;
   border-right-color: #ffffff;
   border-top-color: #ffffff;
   border-right-width: 2px;
@@ -170,8 +177,8 @@ body {
 }
 
 .greeting-focus .bottom-left {
-  left: -6px;
-  bottom: -6px;
+  left: 0;
+  bottom: 0;
   border-left-color: #ffffff;
   border-bottom-color: #ffffff;
   border-left-width: 2px;
@@ -179,8 +186,8 @@ body {
 }
 
 .greeting-focus .bottom-right {
-  right: -6px;
-  bottom: -6px;
+  right: 0;
+  bottom: 0;
   border-right-color: #ffffff;
   border-bottom-color: #ffffff;
   border-right-width: 2px;

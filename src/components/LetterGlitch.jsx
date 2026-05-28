@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import FuzzyText from './FuzzyText.jsx';
 
 const fontSize = 16;
 const charWidth = 10;
 const charHeight = 20;
-const focusScale = 2;
+const focusScale = 3;
 const focusRows = 3;
 const focusColumnPadding = 2;
 
@@ -22,7 +23,6 @@ const LetterGlitch = ({
   onEmbeddedMetrics
 }) => {
   const rootRef = useRef(null);
-  const focusedTextRef = useRef(null);
   const charRefs = useRef([]);
   const embeddedStartedAt = useRef(Date.now());
   const [grid, setGrid] = useState({ columns: 0, rows: 0 });
@@ -62,7 +62,7 @@ const LetterGlitch = ({
   };
 
   const getScanPosition = (length, type = 'short') => {
-    const rowOffset = type === 'near' ? 0 : length > 12 ? 2 : -2;
+    const rowOffset = type === 'near' ? 0 : length > 12 ? 8 : -8;
     const row = Math.max(1, Math.min(grid.rows - 2, Math.floor(grid.rows / 2) + rowOffset));
     const edgePadding = getEdgePadding(Math.max(length, embeddedText.length));
     const embeddedStart =
@@ -303,7 +303,6 @@ const LetterGlitch = ({
 
       {focusedPosition && (
         <span
-          ref={focusedTextRef}
           className="letter-focused-text"
           style={{
             left: `${focusedPosition.x}px`,
@@ -312,7 +311,29 @@ const LetterGlitch = ({
             height: `${focusedPosition.height}px`
           }}
         >
-          <span className="letter-focused-text__inner">{embeddedText}</span>
+          <span className="letter-focused-text__inner">
+            <FuzzyText
+              fontSize={32}
+              fontWeight={700}
+              fontFamily="inherit"
+              color="#ffffff"
+              enableHover
+              baseIntensity={0.2}
+              hoverIntensity={0.54}
+              fuzzRange={34}
+              fps={85}
+              direction="horizontal"
+              transitionDuration={35}
+              clickEffect={false}
+              glitchMode
+              glitchInterval={2700}
+              glitchDuration={850}
+              letterSpacing={11}
+              className="letter-fuzzy-canvas"
+            >
+              {embeddedText}
+            </FuzzyText>
+          </span>
         </span>
       )}
 
