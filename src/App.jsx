@@ -92,7 +92,7 @@ export default function App() {
     <main className={`homepage is-${phase}`}>
       <div className="glitch-field">
         <LetterGlitch
-          glitchColors={['#5227FF']}
+          glitchColors={['#310033', '#be06c7', '#620165']}
           glitchSpeed={40}
           centerVignette={false}
           outerVignette={false}
